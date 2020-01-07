@@ -1,6 +1,8 @@
 package urlshort
 
 import (
+	"database/sql"
+	"fmt"
 	"gopkg.in/yaml.v2"
 	"net/http"
 )
@@ -72,4 +74,35 @@ func YAMLHandler(yml []byte, fallback http.Handler) (http.HandlerFunc, error) {
 	m := buildMap(data)
 
 	return MapHandler(m, fallback), nil
+}
+
+/*
+Pass the function a database connection and then it
+queries for the path
+
+Table schema is expected to be the following
+
+CREATE TABLE paths if not exists (
+	source varchar(255),
+	dest varchar(255)
+)
+*/
+func DBHandler(conn *sql.DB, fallback http.Handler) (http.HandlerFunc, error) {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		query, err := conn.Query(fmt.Sprintf("select * from paths where source = %s", r.URL.String()))
+
+		if err != nil {
+			return
+		}
+
+		result := path{}
+		if err := query.Next(); !err {
+			fallback.ServeHTTP(w, r)
+			return
+		}
+
+		query.Scan(&result.Path, &result.Dest)
+		http.Redirect(w, r, result.Dest, http.StatusFound)
+		return
+	}), nil
 }
