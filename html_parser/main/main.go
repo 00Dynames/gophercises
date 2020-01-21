@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/00Dynames/gophercises/html_parser"
 	"log"
 	"os"
@@ -13,5 +14,5 @@ func main() {
 		log.Panic("Cannot open the given html file")
 	}
 
-	html_parser.Parse(html)
+	fmt.Println(html_parser.Parse(html))
 }
