@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/xml"
 	"fmt"
 	"log"
 	"net/http"
@@ -13,58 +14,68 @@ import (
 func main() {
 
 	// Assign base url
-	base_url := os.Args[1]
-	fmt.Println(base_url)
+	baseURL := os.Args[1]
+	// TODO: check that the base url includes either http:// or https://
+	fmt.Println(baseURL)
 
 	// Build sitemap
-	urls := buildSitemap(base_url)
-	fmt.Println(urls)
+	urls := buildSitemap(baseURL)
+	//fmt.Println(urls)
 
 	// Format xml
+	fmt.Print(xml.Header)
+	enc := xml.NewEncoder(os.Stdout)
+	enc.Indent("", "	")
+	if err := enc.Encode(); err != nil {
+		log.Panic(err)
+	}
+	fmt.Println()
 }
 
-func buildSitemap(base_url string) []string {
+func buildSitemap(baseURL string) []string {
 
 	// visited pages
 	visited := make(map[string]bool)
 	result := make([]string, 0)
 	// pages to visit
 	queue := make([]string, 0)
-	queue = append(queue, base_url)
+	queue = append(queue, baseURL)
 	//fmt.Println(queue)
 
-	http_pattern := regexp.MustCompile(fmt.Sprintf("^http://.+")) //"^%s", base_url))
-	base_pattern := regexp.MustCompile(fmt.Sprintf("^%s", base_url))
+	httpPattern := regexp.MustCompile(fmt.Sprintf("^http://.+")) //"^%s", baseURL))
+	basePattern := regexp.MustCompile(fmt.Sprintf("^%s", baseURL))
 
-	curr_url := ""
+	currURL := ""
 	// while pages to visit is not empty
 	for len(queue) > 0 {
 		//fmt.Println(queue)
 		//fmt.Println(visited)
-		curr_url, queue = queue[0], queue[1:]
+		currURL, queue = queue[0], queue[1:]
 
-		//fmt.Println(http_pattern.FindString(curr_url))
-		if http_pattern.FindString(curr_url) == "" {
-			curr_url = base_url + "/" + curr_url
+		// TODO: strings library has a hasPrefix function
+
+		//fmt.Println(httpPattern.FindString(currURL))
+		if httpPattern.FindString(currURL) == "" {
+			currURL = baseURL + "/" + currURL
 		}
 
-		//fmt.Println(base_pattern.FindString(curr_url))
-		if base_pattern.FindString(curr_url) == "" {
+		//fmt.Println(basePattern.FindString(currURL))
+		if basePattern.FindString(currURL) == "" {
 			//		fmt.Println("continue")
 			continue
 		}
 
-		//		fmt.Println(curr_url)
+		//		fmt.Println(currURL)
 
-		if visited[curr_url] {
+		if visited[currURL] {
 			continue
 		}
 
-		// Mark curr_url as visited
-		visited[curr_url] = true
-		result = append(result, curr_url)
+		// Mark currURL as visited
+		visited[currURL] = true
+		result = append(result, currURL)
 
-		resp, err := http.Get(curr_url)
+		resp, err := http.Get(currURL)
 		if err != nil {
 			log.Panic(err)
 		}
